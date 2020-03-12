@@ -1,5 +1,5 @@
 from tkinter import *
-
+import pyperclip
 
 class GettyFrame(Frame):
 
@@ -90,11 +90,6 @@ class GettyFrame(Frame):
                     variable=self.orSquare,
                     command=self.getOrientation
                     ).grid(row=5, column=1, sticky=W)
-        Checkbutton(self,
-                    text="panaromicHorizontal",
-                    variable=self.orPanoramicHorizontal,
-                    command=self.getOrientation
-                    ).grid(row=5, column=2, sticky=W)
 
         self.imgRes = StringVar()
         self.imgRes.set(None)
@@ -116,16 +111,18 @@ class GettyFrame(Frame):
                     command=self.getResolution).grid(
             row=7, column=3, sticky=W
         )
+        Button(self,text='SEARCH',command=self.searchPictures).grid(row=8,column=0,sticky=W)
         for i in GettyFrame.winfo_children(self):
             if(str(i) =='.!gettyframe.!entry'):
                 i.config(bg="#dcf0fa")
             else:
                 i.config(bg="#81cbf0")
-
+    def getSearchEntry(self):
+        return self.searchEntry.get()
     def getSort(self):
-        print(self.sortByVar.get())
+        return self.sortByVar.get()
     def getRange(self):
-        print(self.rangeVar.get())
+        return self.rangeVar.get()
     def getOrientation(self):
         orientation = ""
         if self.orVertical.get():
@@ -136,6 +133,21 @@ class GettyFrame(Frame):
             orientation+= 'square'+','
         if self.orPanoramicHorizontal.get():
             orientation+= 'panaromicHorizontal'
-        print(orientation)
+        return orientation
     def getResolution(self):
-        print(self.imgRes.get())
+        return self.imgRes.get()
+    def searchPictures(self):
+        if not self.getSearchEntry().isspace():
+            if self.getSearchEntry() != '':
+                print('ukucano je')
+                url = 'https://www.gettyimages.com/photos/'
+                url+= self.getSearchEntry()+'?family=editorial'
+                if self.getSort() != 'None':
+                    url+= '&sort='+self.getSort()
+                if self.getRange() != 'None':
+                    url+= '&recency='+self.getRange()
+                if self.getOrientation() != '':
+                    url+= '&orientations=' + self.getOrientation()
+                if self.getResolution() != 'None':
+                    url+= '&imagesize=' + self.getResolution()
+                pyperclip.copy(url)
