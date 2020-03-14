@@ -10,25 +10,22 @@ class Root(Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.frames = {}
+        self.windows = {}
         for F in (GettyFrame,PicturesFrame):
             page_name = F.__name__
             frame = F(container, controller=self)
-            self.frames[page_name] = frame
+            self.windows[page_name] = frame
 
-            # put all of the pages in the same location;
-            # the one on the top of the stacking order
-            # will be the one that is visible.
+
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame("GettyFrame")
 
     def show_frame(self, page_name,urll=''):
-        '''Show a frame for the given page name'''
-        frame = self.frames[page_name]
-        frame.tkraise()
+        window = self.windows[page_name]
+        window.tkraise()
         if urll != '':
-            frame.create_widgets(urll)
+            window.create_widgets(urll)
 
 class GettyFrame(Frame):
 
@@ -192,19 +189,34 @@ class PicturesFrame(Frame):
         self.grid()
         # self.create_widgets()
     def create_widgets(self,url=""):
-            print('hejjjj')
-            Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
-            if (url!=''):
-                linkovi = GettyDownloader.getListOfPhotos(url)
-                if (str(type(linkovi))!="<class 'str'>"):
-                    if (len(linkovi)>0):
-                        for i in linkovi:
-                            print(i)
-                    Label(self, text='Ovde ce biti slike.').grid(row=1, column=0, sticky=W)
-                else:
-                    Label(self, text='Ovde nece biti slike.').grid(row=1, column=0, sticky=W)
+        print('hejjjj')
+        scrollbar = Scrollbar(self, width=50)
+        scrollbar.pack(side=RIGHT, fill=Y, expand=False)
+
+        self.canvas = Canvas(self, yscrollcommand=scrollbar.set)
+        self.canvas.pack(side=LEFT, fill=BOTH, expand=True)
+
+        scrollbar.config(command=self.canvas.yview)
+
+        self.canvas.bind('<Configure>', self.__fill_canvas)
+
+        row=0
+        column=0
+        # Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
+        if (url!=''):
+            linkovi = GettyDownloader.getListOfPhotos(url)
+            if (str(type(linkovi))!="<class 'str'>"):
+                if (len(linkovi)>0):
+                    for i in range(len(linkovi)):
+                        if (column==4):
+                            column=0
+                            row+=1
+                        Label(self, text='SLIKA'+str(i)).grid(row=row, column=column, sticky=W)
+                        column+=1
 
 
+            else:
+                Label(self, text='Ovde nece biti slike.').grid(row=1, column=0, sticky=W)
 
 
 
