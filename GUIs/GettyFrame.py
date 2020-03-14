@@ -1,11 +1,42 @@
 from tkinter import *
 import pyperclip
+from Downloaders import GettyDownloader,IStockDownloader
+class Root(Tk):
+    def __init__(self, *args, **kwargs):
+        Tk.__init__(self, *args, **kwargs)
+
+        container = Frame(self)
+        container.pack(side="top", fill="both", expand=True)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
+        self.frames = {}
+        for F in (GettyFrame,PicturesFrame):
+            page_name = F.__name__
+            frame = F(container, controller=self)
+            self.frames[page_name] = frame
+
+            # put all of the pages in the same location;
+            # the one on the top of the stacking order
+            # will be the one that is visible.
+            frame.grid(row=0, column=0, sticky="nsew")
+
+        self.show_frame("GettyFrame")
+
+    def show_frame(self, page_name,urll=''):
+        '''Show a frame for the given page name'''
+        frame = self.frames[page_name]
+        frame.tkraise()
+        if urll != '':
+            frame.create_widgets(urll)
 
 class GettyFrame(Frame):
 
-    def __init__(self,master):
-        super(GettyFrame,self).__init__(master)
-        self.grid()
+    def __init__(self, parent, controller):
+        Frame.__init__(self, parent)
+        self.config(bg="#81cbf0")
+        self.controller = controller
+        self.grid(row=0,column=0,sticky=W)
         self.create_widgets()
 
     def create_widgets(self):
@@ -113,8 +144,8 @@ class GettyFrame(Frame):
         )
         Button(self,text='SEARCH',command=self.searchPictures).grid(row=8,column=0,sticky=W)
         for i in GettyFrame.winfo_children(self):
-            if(str(i) =='.!gettyframe.!entry'):
-                i.config(bg="#dcf0fa")
+            if(str(i) =='.!frame.!gettyframe.!entry'):
+                i.config(bg="#c8e9fa")
             else:
                 i.config(bg="#81cbf0")
     def getSearchEntry(self):
@@ -151,3 +182,29 @@ class GettyFrame(Frame):
                 if self.getResolution() != 'None':
                     url+= '&imagesize=' + self.getResolution()
                 pyperclip.copy(url)
+                self.controller.show_frame('PicturesFrame',pyperclip.paste())
+
+
+class PicturesFrame(Frame):
+    def __init__(self, parent, controller):
+        Frame.__init__(self, parent)
+        self.controller = controller
+        self.grid()
+        # self.create_widgets()
+    def create_widgets(self,url=""):
+            print('hejjjj')
+            Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
+            if (url!=''):
+                linkovi = GettyDownloader.getListOfPhotos(url)
+                if (str(type(linkovi))!="<class 'str'>"):
+                    if (len(linkovi)>0):
+                        for i in linkovi:
+                            print(i)
+                    Label(self, text='Ovde ce biti slike.').grid(row=1, column=0, sticky=W)
+                else:
+                    Label(self, text='Ovde nece biti slike.').grid(row=1, column=0, sticky=W)
+
+
+
+
+
