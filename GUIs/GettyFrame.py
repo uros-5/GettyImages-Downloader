@@ -1,6 +1,10 @@
 from tkinter import *
 import pyperclip
+import base64
 from Downloaders import GettyDownloader,IStockDownloader
+from urllib.request import urlopen
+from PIL import Image, ImageTk
+import io
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
@@ -10,22 +14,20 @@ class Root(Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        self.windows = {}
-        for F in (GettyFrame,PicturesFrame):
-            page_name = F.__name__
-            frame = F(container, controller=self)
-            self.windows[page_name] = frame
-
-
+        self.prozori = {}
+        for frejm in (GettyFrame,PicturesFrame):
+            page_name = frejm.__name__
+            frame = frejm(container, controller=self)
+            self.prozori[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame("GettyFrame")
+        self.prebaci_frejm("GettyFrame")
 
-    def show_frame(self, page_name,urll=''):
-        window = self.windows[page_name]
-        window.tkraise()
+    def prebaci_frejm(self, page_name,urll=''):
+        prozor = self.prozori[page_name]
+        prozor.tkraise()
         if urll != '':
-            window.create_widgets(urll)
+            prozor.create_widgets(urll)
 
 class GettyFrame(Frame):
 
@@ -179,44 +181,60 @@ class GettyFrame(Frame):
                 if self.getResolution() != 'None':
                     url+= '&imagesize=' + self.getResolution()
                 pyperclip.copy(url)
-                self.controller.show_frame('PicturesFrame',pyperclip.paste())
+                self.controller.prebaci_frejm('PicturesFrame',pyperclip.paste())
 
 
 class PicturesFrame(Frame):
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
         self.controller = controller
-        self.grid()
         # self.create_widgets()
     def create_widgets(self,url=""):
         print('hejjjj')
-        scrollbar = Scrollbar(self, width=50)
-        scrollbar.pack(side=RIGHT, fill=Y, expand=False)
+        # za embed scrollbar-a moramo koristiti canvas u kome se nalazi frame
+        self.canvas =Canvas(self, borderwidth=0, background="#ffffff")
+        self.frame = Frame(self.canvas, background="#ffffff")
+        self.vsb = Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vsb.set)
 
-        self.canvas = Canvas(self, yscrollcommand=scrollbar.set)
-        self.canvas.pack(side=LEFT, fill=BOTH, expand=True)
 
-        scrollbar.config(command=self.canvas.yview)
+        self.vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both",expand=True)
+        self.canvas.create_window((4, 4), window=self.frame, anchor="nw",
+                                  tags="self.frame")
 
-        self.canvas.bind('<Configure>', self.__fill_canvas)
+
+        self.frame.bind("<Configure>", self.onFrameConfigure)
 
         row=0
         column=0
         # Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
         if (url!=''):
             linkovi = GettyDownloader.getListOfPhotos(url)
+            self.tk_imgs = []
             if (str(type(linkovi))!="<class 'str'>"):
                 if (len(linkovi)>0):
                     for i in range(len(linkovi)):
                         if (column==4):
                             column=0
                             row+=1
-                        Label(self, text='SLIKA'+str(i)).grid(row=row, column=column, sticky=W)
+                        image_url = urlopen(linkovi[i])
+                        my_picture = io.BytesIO(image_url.read())
+                        pil_img = Image.open(my_picture).resize((152, 152), Image.NONE)
+                        tk_img = ImageTk.PhotoImage(pil_img)
+                        self.tk_imgs.append(tk_img)
+                        lbl1 = Label(self.frame,image=self.tk_imgs[-1],borderwidth=2, relief="groove")
+                        lbl1['image'] = self.tk_imgs[-1]
+                        lbl1.grid(row=row, column=column, sticky=W)
                         column+=1
+                        # print('dodato.')
+            #             nature 2005
 
 
             else:
-                Label(self, text='Ovde nece biti slike.').grid(row=1, column=0, sticky=W)
+                Label(self.frame, text='Ovde nece biti slike.').grid(row=1, column=0, sticky=W)
 
-
+    def onFrameConfigure(self, event):
+        '''Reset the scroll region to encompass the inner frame'''
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
