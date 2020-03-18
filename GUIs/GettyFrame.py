@@ -5,6 +5,7 @@ from Downloaders import GettyDownloader,IStockDownloader
 from urllib.request import urlopen
 from PIL import Image, ImageTk
 import io
+import shelve
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
@@ -196,7 +197,7 @@ class PicturesFrame(Frame):
         self.frame = Frame(self.canvas, background="#ffffff")
         self.vsb = Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vsb.set)
-
+        # recnik = {'link0': {1: ['a', 'b']}}
 
         self.vsb.pack(side="right", fill="y")
         self.canvas.pack(side="left", fill="both",expand=True)
@@ -210,21 +211,20 @@ class PicturesFrame(Frame):
         column=0
         # Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
         if (url!=''):
-            linkovi = GettyDownloader.getListOfPhotos(url)
-            self.tk_imgs = []
-            if (str(type(linkovi))!="<class 'str'>"):
-                if (len(linkovi)>0):
-                    for i in range(len(linkovi)):
+            fajl = shelve.open('linkovi.dat','r')
+
+            self.tk_imgs = GettyDownloader.getListOfPhotos(url)
+            # self.tk_imgs = []
+            if (str(type(self.tk_imgs))!="<class 'str'>"):
+                if (len(self.tk_imgs)>0):
+                    #dobijena je lista
+                    for i in range(len(self.tk_imgs)):
                         if (column==4):
                             column=0
                             row+=1
-                        image_url = urlopen(linkovi[i])
-                        my_picture = io.BytesIO(image_url.read())
-                        pil_img = Image.open(my_picture).resize((152, 152), Image.NONE)
-                        tk_img = ImageTk.PhotoImage(pil_img)
-                        self.tk_imgs.append(tk_img)
-                        lbl1 = Label(self.frame,image=self.tk_imgs[-1],borderwidth=2, relief="groove")
-                        lbl1['image'] = self.tk_imgs[-1]
+
+                        lbl1 = Label(self.frame,image=self.tk_imgs[i],borderwidth=2, relief="groove")
+                        lbl1['image'] = self.tk_imgs[i]
                         lbl1.grid(row=row, column=column, sticky=W)
                         column+=1
                         # print('dodato.')
@@ -237,4 +237,3 @@ class PicturesFrame(Frame):
     def onFrameConfigure(self, event):
         '''Reset the scroll region to encompass the inner frame'''
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
