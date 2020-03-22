@@ -7,8 +7,7 @@ class GettyDownloader():
         self.urls = []
         while(True):
             try:
-                req = requests.get(
-                    'https://www.gettyimages.com/photos/manchester-united-fc?family=editorial&phrase=manchester%20united%20fc&sort=mostpopular')
+                req = requests.get(url)
                 stranica = BeautifulSoup(req.text,"html.parser")
                 slike = stranica.findAll("figure", {"class": "gallery-mosaic-asset__figure"}, "img")
 

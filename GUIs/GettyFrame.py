@@ -6,6 +6,8 @@ from urllib.request import urlopen
 from PIL import Image, ImageTk
 import io
 import shelve
+import tkinter.constants as constants
+import re
 from Slike import Slike
 class Root(Tk):
     def __init__(self, *args, **kwargs):
@@ -15,7 +17,6 @@ class Root(Tk):
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
-
         self.prozori = {}
         for frejm in (GettyFrame,PicturesFrame):
             page_name = frejm.__name__
@@ -53,7 +54,7 @@ class GettyFrame(Frame):
         Label(self,text='Search').grid(row=0,column=0,sticky=W)
 
         self.searchEntry = Entry(self,width=30)
-        self.searchEntry.insert(END,'manchester united bayern')
+        self.searchEntry.insert(END,'manchester united')
         self.searchEntry.grid(row=0,column=1,sticky=W)
 
         self.sortByVar = StringVar()
@@ -174,68 +175,142 @@ class GettyFrame(Frame):
             if self.getSearchEntry() != '':
                 url = 'https://www.gettyimages.com/photos/'
                 url+= self.getSearchEntry()+'?family=editorial'
-                if self.getSort() != 'None':
-                    url+= '&sort='+self.getSort()
                 if self.getRange() != 'None':
                     url+= '&recency='+self.getRange()
                 if self.getOrientation() != '':
                     url+= '&orientations=' + self.getOrientation()
                 if self.getResolution() != 'None':
                     url+= '&imagesize=' + self.getResolution()
+                if self.getSort() != 'None':
+                    url+= '&sort='+self.getSort()
+                if self.getSort() == 'None':
+                    url+= '&sort=mostpopular'
+
                 pyperclip.copy(url)
                 self.controller.prebaci_frejm('PicturesFrame',pyperclip.paste(),1)
 
 
 class PicturesFrame(Frame):
     allPictures = []
+    counter = 0
+    tr_br = 0
+    url0 = ""
+    # &page=tr_br&sort=
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
         self.controller = controller
         self.slike = Slike.Slike()
+
+
     def create_widgets(self,url="",br=1):
+        if(PicturesFrame.counter == 0):
+            self.scrollbar_setup()
+            PicturesFrame.counter+=1
+            # manchester united
+            self.footer_setup()
+        self.dodajslike(url,br)
+    def idi_nazad(self):
+
+        sablon = re.compile(r'(https:.*?)(&page=)?(\d{1,4})?(&sort=.*)')
+        podaci = sablon.findall(PicturesFrame.url0)
+        br = 0
+        print(podaci)
+        if (PicturesFrame.tr_br==1):
+            urlnext = podaci[0][0] + '&page=' + str(PicturesFrame.tr_br - 1) + podaci[0][3]
+            self.remove_gallery()
+        else:
+            br = int(podaci[0][2]) - 1
+            urlnext = podaci[0][0] + podaci[0][1] + str(br) + podaci[0][3]
+
+        for i in self.frame.winfo_children():
+            i.destroy()
+        self.dodajslike(urlnext,br)
+    def idi_napred(self):
+        sablon = re.compile(r'(https:.*?)(&page=)?(\d{1,4})?(&sort=.*)')
+        podaci = sablon.findall(PicturesFrame.url0)
+        br = 0
+        print(podaci)
+        urlnext = ""
+        if (PicturesFrame.tr_br == 1):
+            urlnext = podaci[0][0] + '&page='+str(PicturesFrame.tr_br+1)+ podaci[0][3]
+        else:
+            br = int(podaci[0][2])+1
+            urlnext = podaci[0][0] + podaci[0][1] + str(br)+ podaci[0][3]
+        for i in self.frame.winfo_children():
+            i.destroy()
+        self.dodajslike(urlnext,br)
+
+    def scrollbar_setup(self):
         # za embed scrollbar-a moramo koristiti canvas u kome se nalazi frame
-        self.canvas =Canvas(self, borderwidth=0, background="#ffffff")
-        self.frame = Frame(self.canvas, background="#ffffff")
+        self.canvas = Canvas(self, borderwidth=0, background="#ffffff")
+        self.frame = Frame(self.canvas, background="#81cbf0")
         self.vsb = Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vsb.set)
         # recnik = {'link0': {1: ['a', 'b']}}
 
         self.vsb.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both",expand=True)
+        self.canvas.pack(side="left", fill="both", expand=True)
         self.canvas.create_window((4, 4), window=self.frame, anchor="nw",
                                   tags="self.frame")
 
-
         self.frame.bind("<Configure>", self.onFrameConfigure)
-        # manchester united
-        row=0
-        column=0
+    def remove_gallery(self):
+        for i in self.frame.winfo_children():
+            i.destroy()
+        self.controller.prebaci_frejm('GettyFrame')
+        self.controller.geometry("628x256")
+
+    # https://www.gettyimages.com/photos/manchester united?family=editorial&recency=last30days&orientations=vertical,&imagesize=xxlarge&sort=mostpopular
+    def footer_setup(self):
+        self.btn_search = Button(self.controller, text='<-', font='Courier 15 bold',command=self.remove_gallery)
+        self.btn_previous = Button(self.controller, text='<', font='Courier 15 bold',command=self.idi_nazad)
+        self.btn_next = Button(self.controller, text='>', font='Courier 15 bold',command=self.idi_napred)
+        self.btn_download = Button(self.controller, text='DOWNLOAD:', font='Courier 15 bold')
+
+        self.btn_search.pack(side=constants.LEFT, fill="both", expand=True)
+        self.btn_previous.pack(side=constants.LEFT, fill="both", expand=True)
+        self.btn_next.pack(side=constants.LEFT, fill="both", expand=True)
+        self.btn_download.pack(side=constants.LEFT, fill="both", expand=True)
+    def dodajslike2(self,podaci):
+        row = 1
+        column = 0
+        for i in range(len(podaci)):
+            if (column == 4):
+                column = 0
+                row += 1
+            PicturesFrame.allPictures.append(self.createTkImage(podaci[i]))
+            self.lbl1 = Label(self.frame, image=PicturesFrame.allPictures[-1], borderwidth=2,
+                              relief="groove")
+            self.lbl1['image'] = PicturesFrame.allPictures[-1]
+            self.lbl1.grid(row=row, column=column, sticky=W)
+            column += 1
+    def dodajslike(self,url,br):
+
         # Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
-        if (url!=''):
-            provera = self.slike.provera(url,br)
-            if(provera =='URL NOT FOUND'):
+        if (url != ''):
+            podaci = self.slike.provera(url)
+            if (podaci == 'URL NOT FOUND'):
+
                 # self.slike.unos()
                 self.urls = GettyDownloader.getListOfPhotos(self,url)
-            # self.imgs = []
-                if (str(type(self.urls))!="<class 'str'>"):
-                    if (len(self.urls)>0):
-                        #dobijena je lista
-                        self.slike.unos(url, 1, provera, self.urls)
-                        for i in range(len(self.urls)):
-                            if (column==4):
-                                column=0
-                                row+=1
-                            PicturesFrame.allPictures.append(self.createTkImage(self.urls[i]))
-                            self.lbl1 = Label(self.frame,image=PicturesFrame.allPictures[-1],borderwidth=2, relief="groove")
-                            self.lbl1['image'] = PicturesFrame.allPictures[-1]
-                            self.lbl1.grid(row=row, column=column, sticky=W)
-                            column+=1
-                            # print('dodato.')
-                #             nature 2005
+                # self.imgs = []
+                if (str(type(self.urls)) != "<class 'str'>"):
+                    if (len(self.urls) > 0):
+                        PicturesFrame.tr_br = br
+                        PicturesFrame.url0 = url
+                        # dobijena je lista
+                        self.slike.unos(url,self.urls)
+                        self.controller.geometry("1300x460")
+                        self.dodajslike2(self.urls)
 
 
+                else:
+                    Label(self.frame, text='Trenutna stranica nije dostupna.').grid(row=1, column=0, sticky=W)
             else:
-                Label(self.frame, text='Ovde nece biti slike.').grid(row=1, column=0, sticky=W)
+                PicturesFrame.tr_br = br
+                PicturesFrame.url0 = url
+                self.controller.geometry("1300x460")
+                self.dodajslike2(podaci)
 
     def onFrameConfigure(self, event):
         '''Reset the scroll region to encompass the inner frame'''
