@@ -1,11 +1,12 @@
 from tkinter import *
 import pyperclip
 import base64
-from Downloaders import GettyDownloader,IStockDownloader
+from Downloaders.GettyDownloader import GettyDownloader
 from urllib.request import urlopen
 from PIL import Image, ImageTk
 import io
 import shelve
+from Slike import Slike
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
@@ -24,11 +25,11 @@ class Root(Tk):
 
         self.prebaci_frejm("GettyFrame")
 
-    def prebaci_frejm(self, page_name,urll=''):
+    def prebaci_frejm(self, page_name,urll='',br=1):
         prozor = self.prozori[page_name]
         prozor.tkraise()
         if urll != '':
-            prozor.create_widgets(urll)
+            prozor.create_widgets(urll,br)
 
 class GettyFrame(Frame):
 
@@ -52,6 +53,7 @@ class GettyFrame(Frame):
         Label(self,text='Search').grid(row=0,column=0,sticky=W)
 
         self.searchEntry = Entry(self,width=30)
+        self.searchEntry.insert(END,'manchester united bayern')
         self.searchEntry.grid(row=0,column=1,sticky=W)
 
         self.sortByVar = StringVar()
@@ -170,7 +172,6 @@ class GettyFrame(Frame):
     def searchPictures(self):
         if not self.getSearchEntry().isspace():
             if self.getSearchEntry() != '':
-                print('ukucano je')
                 url = 'https://www.gettyimages.com/photos/'
                 url+= self.getSearchEntry()+'?family=editorial'
                 if self.getSort() != 'None':
@@ -182,16 +183,16 @@ class GettyFrame(Frame):
                 if self.getResolution() != 'None':
                     url+= '&imagesize=' + self.getResolution()
                 pyperclip.copy(url)
-                self.controller.prebaci_frejm('PicturesFrame',pyperclip.paste())
+                self.controller.prebaci_frejm('PicturesFrame',pyperclip.paste(),1)
 
 
 class PicturesFrame(Frame):
+    allPictures = []
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
         self.controller = controller
-        # self.create_widgets()
-    def create_widgets(self,url=""):
-        print('hejjjj')
+        self.slike = Slike.Slike()
+    def create_widgets(self,url="",br=1):
         # za embed scrollbar-a moramo koristiti canvas u kome se nalazi frame
         self.canvas =Canvas(self, borderwidth=0, background="#ffffff")
         self.frame = Frame(self.canvas, background="#ffffff")
@@ -206,29 +207,31 @@ class PicturesFrame(Frame):
 
 
         self.frame.bind("<Configure>", self.onFrameConfigure)
-
+        # manchester united
         row=0
         column=0
         # Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
         if (url!=''):
-            fajl = shelve.open('linkovi.dat','r')
-
-            self.tk_imgs = GettyDownloader.getListOfPhotos(url)
-            # self.tk_imgs = []
-            if (str(type(self.tk_imgs))!="<class 'str'>"):
-                if (len(self.tk_imgs)>0):
-                    #dobijena je lista
-                    for i in range(len(self.tk_imgs)):
-                        if (column==4):
-                            column=0
-                            row+=1
-
-                        lbl1 = Label(self.frame,image=self.tk_imgs[i],borderwidth=2, relief="groove")
-                        lbl1['image'] = self.tk_imgs[i]
-                        lbl1.grid(row=row, column=column, sticky=W)
-                        column+=1
-                        # print('dodato.')
-            #             nature 2005
+            provera = self.slike.provera(url,br)
+            if(provera =='URL NOT FOUND'):
+                # self.slike.unos()
+                self.urls = GettyDownloader.getListOfPhotos(self,url)
+            # self.imgs = []
+                if (str(type(self.urls))!="<class 'str'>"):
+                    if (len(self.urls)>0):
+                        #dobijena je lista
+                        self.slike.unos(url, 1, provera, self.urls)
+                        for i in range(len(self.urls)):
+                            if (column==4):
+                                column=0
+                                row+=1
+                            PicturesFrame.allPictures.append(self.createTkImage(self.urls[i]))
+                            self.lbl1 = Label(self.frame,image=PicturesFrame.allPictures[-1],borderwidth=2, relief="groove")
+                            self.lbl1['image'] = PicturesFrame.allPictures[-1]
+                            self.lbl1.grid(row=row, column=column, sticky=W)
+                            column+=1
+                            # print('dodato.')
+                #             nature 2005
 
 
             else:
@@ -237,3 +240,14 @@ class PicturesFrame(Frame):
     def onFrameConfigure(self, event):
         '''Reset the scroll region to encompass the inner frame'''
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    def createTkImage(self,url):
+        image_url = urlopen(url)
+        my_picture = io.BytesIO(image_url.read())
+        im = Image.open(my_picture)
+        width, height = im.size
+
+        pil_img = Image.open(my_picture).resize((int(im.size[0]/2), int(im.size[1]/2)), Image.NONE)
+        tk_img = ImageTk.PhotoImage(pil_img)
+        pil_img.close()
+        return tk_img
+# https://www.gettyimages.com/photos/manchester united bayern?family=editorial&sort=mostpopular&recency=anydate&orientations=vertical,

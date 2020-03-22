@@ -1,33 +1,33 @@
-from selenium import webdriver
-import base64
-from urllib.request import urlopen
-from PIL import Image, ImageTk
-import io
-driver = webdriver.Firefox()
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import requests
+from bs4 import BeautifulSoup
 
-def getListOfPhotos(url):
-    driver.get(url)
-    while(True):
-        try:
-            slike = driver.find_elements_by_xpath("//figure[contains(@class,'gallery-mosaic')]//img")
-            if (len(slike)==0):
-                notAvailable = driver.find_elements_by_xpath("//h4[contains(@class,'gallery-no')]")
-                if (len(notAvailable)>0):
-                    print('to je to.')
-                    return 'NO'
-                else:
-                    continue
-            elif(len(slike)>0):
-                slike2 = []
-                for i in range(len(slike)):
-                    # slike2.append(i.get_attribute('src'))
-                    image_url = urlopen(slike[i].get_attribute('src'))
-                    my_picture = io.BytesIO(image_url.read())
-                    pil_img = Image.open(my_picture).resize((152, 152), Image.NONE)
-                    tk_img = ImageTk.PhotoImage(pil_img)
-                    slike2.append(tk_img)
-                return slike2
+class GettyDownloader():
+    def getListOfPhotos(self,url):
+        self.urls = []
+        while(True):
+            try:
+                req = requests.get(
+                    'https://www.gettyimages.com/photos/manchester-united-fc?family=editorial&phrase=manchester%20united%20fc&sort=mostpopular')
+                stranica = BeautifulSoup(req.text,"html.parser")
+                slike = stranica.findAll("figure", {"class": "gallery-mosaic-asset__figure"}, "img")
 
-            break
-        except:
-            continue
+                if (len(list(slike)) == 0):
+                    notAvailable = stranica.findAll("h4",{"class":"gallery-no-assets__header"})
+                    if (len(list(notAvailable)) > 0):
+                        if(notAvailable[0].text.startswith('Sorry')):
+                            print('to je to.')
+                            return 'NO'
+                    else:
+                        continue
+                elif(len(list(slike)) > 0):
+                    self.slike2 = []
+                    for i in range(len(slike)):
+                        with ThreadPoolExecutor(max_workers=5) as executor:
+                            self.slike2.append(str(slike[i].find('img').__getitem__('src')))
+                    return self.slike2
+
+                break
+            except Exception as e:
+
+                continue
