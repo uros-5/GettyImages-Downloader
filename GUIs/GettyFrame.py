@@ -9,6 +9,7 @@ import shelve
 import tkinter.constants as constants
 import re
 from Slike import Slike
+
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
@@ -195,6 +196,7 @@ class PicturesFrame(Frame):
     counter = 0
     tr_br = 0
     url0 = ""
+    za_download0 = []
     # &page=tr_br&sort=
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
@@ -214,7 +216,6 @@ class PicturesFrame(Frame):
         sablon = re.compile(r'(https:.*?)(&page=)?(\d{1,4})?(&sort=.*)')
         podaci = sablon.findall(PicturesFrame.url0)
         br = 0
-        print(podaci)
         if (PicturesFrame.tr_br==1):
             urlnext = podaci[0][0] + '&page=' + str(PicturesFrame.tr_br - 1) + podaci[0][3]
             self.remove_gallery()
@@ -229,7 +230,6 @@ class PicturesFrame(Frame):
         sablon = re.compile(r'(https:.*?)(&page=)?(\d{1,4})?(&sort=.*)')
         podaci = sablon.findall(PicturesFrame.url0)
         br = 0
-        print(podaci)
         urlnext = ""
         if (PicturesFrame.tr_br == 1):
             urlnext = podaci[0][0] + '&page='+str(PicturesFrame.tr_br+1)+ podaci[0][3]
@@ -259,18 +259,39 @@ class PicturesFrame(Frame):
             i.destroy()
         self.controller.prebaci_frejm('GettyFrame')
         self.controller.geometry("628x256")
-
+    def download_zip(self,):
+        GettyDownloader.download_zip(self,PicturesFrame.za_download0)
+        PicturesFrame.za_download0 = []
+        for i in self.frame.winfo_children():
+            i.selectedd = False
+            i['borderwidth'] = 2
+            i['relief'] = 'groove'
     # https://www.gettyimages.com/photos/manchester united?family=editorial&recency=last30days&orientations=vertical,&imagesize=xxlarge&sort=mostpopular
     def footer_setup(self):
         self.btn_search = Button(self.controller, text='<-', font='Courier 15 bold',command=self.remove_gallery)
         self.btn_previous = Button(self.controller, text='<', font='Courier 15 bold',command=self.idi_nazad)
         self.btn_next = Button(self.controller, text='>', font='Courier 15 bold',command=self.idi_napred)
-        self.btn_download = Button(self.controller, text='DOWNLOAD:', font='Courier 15 bold')
+        self.btn_download = Button(self.controller, text='DOWNLOAD:', font='Courier 15 bold',
+                                   command=self.download_zip)
 
         self.btn_search.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_previous.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_next.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_download.pack(side=constants.LEFT, fill="both", expand=True)
+    def za_download(self,label1):
+        # PicturesFrame.za_download0
+        if (label1.selectedd == False):
+            label1.selectedd = True
+            PicturesFrame.za_download0.append(label1.lokacija)
+            label1['borderwidth'] = 4
+            label1['relief'] = 'solid'
+        elif (label1.selectedd == True):
+            label1.selectedd = False
+            PicturesFrame.za_download0.remove(label1.lokacija)
+            label1['borderwidth'] = 2
+            label1['relief'] = 'groove'
+
+
     def dodajslike2(self,podaci):
         row = 1
         column = 0
@@ -282,6 +303,9 @@ class PicturesFrame(Frame):
             self.lbl1 = Label(self.frame, image=PicturesFrame.allPictures[-1], borderwidth=2,
                               relief="groove")
             self.lbl1['image'] = PicturesFrame.allPictures[-1]
+            self.lbl1.lokacija = podaci[i]
+            self.lbl1.selectedd = False
+            self.lbl1.bind("<Button-1>", lambda e, var=self.lbl1: self.za_download(var))
             self.lbl1.grid(row=row, column=column, sticky=W)
             column += 1
     def dodajslike(self,url,br):
@@ -302,10 +326,17 @@ class PicturesFrame(Frame):
                         self.slike.unos(url,self.urls)
                         self.controller.geometry("1300x460")
                         self.dodajslike2(self.urls)
-
+                    elif (len(self.urls) == 0):
+                        PicturesFrame.tr_br = br
+                        PicturesFrame.url0 = url
+                        Label(self.frame, text='Trenutna stranica nije dostupna.', bg='#ff4747').grid(row=1, column=0,sticky=W)
+                        self.controller.geometry("628x369")
 
                 else:
-                    Label(self.frame, text='Trenutna stranica nije dostupna.').grid(row=1, column=0, sticky=W)
+                    PicturesFrame.tr_br = br
+                    PicturesFrame.url0 = url
+                    Label(self.frame, text='Trenutna stranica nije dostupna.',bg='#ff4747').grid(row=1, column=0, sticky=W)
+                    self.controller.geometry("628x369")
             else:
                 PicturesFrame.tr_br = br
                 PicturesFrame.url0 = url
@@ -313,7 +344,6 @@ class PicturesFrame(Frame):
                 self.dodajslike2(podaci)
 
     def onFrameConfigure(self, event):
-        '''Reset the scroll region to encompass the inner frame'''
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     def createTkImage(self,url):
         image_url = urlopen(url)
@@ -325,4 +355,3 @@ class PicturesFrame(Frame):
         tk_img = ImageTk.PhotoImage(pil_img)
         pil_img.close()
         return tk_img
-# https://www.gettyimages.com/photos/manchester united bayern?family=editorial&sort=mostpopular&recency=anydate&orientations=vertical,
