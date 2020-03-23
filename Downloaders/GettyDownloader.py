@@ -1,11 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 from bs4 import BeautifulSoup
-import traceback
-import time
 import os
 import zipfile
-from PIL import Image
 import urllib.request
 class GettyDownloader():
     def getListOfPhotos(self,url):
@@ -38,12 +35,13 @@ class GettyDownloader():
     def download_zip(self,podaci):
         zipFajl = ''
         imefajla=''
+        brojac = 0
         while(True):
-            brojac=0
             imefajla = 'download_GettyImages'+str(brojac)+'.zip'
             if(imefajla not in os.listdir('Slike/')):
                 zipFajl = zipfile.ZipFile('Slike/'+imefajla,'w')
                 break
+            brojac+=1
         for i in range(len(podaci)):
             url = podaci[i]
             podatak = urllib.request.urlretrieve(url, "Slike/Slika_"+str(i)+".jpg")
@@ -51,10 +49,5 @@ class GettyDownloader():
         zipFajl.close()
         zipFajl = zipfile.ZipFile('Slike/'+imefajla)
         for i in zipFajl.namelist():
-            print(i)
             os.unlink(i)
-            print('obrisano')
         zipFajl.close()
-        # urllib.request.urlretrieve("http://...jpg", "1.jpg")
-        # zipFajl.write(0)
-        # zipfile.close()

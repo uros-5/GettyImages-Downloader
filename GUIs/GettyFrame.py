@@ -1,15 +1,15 @@
 from tkinter import *
 import pyperclip
-import base64
 from Downloaders.GettyDownloader import GettyDownloader
 from urllib.request import urlopen
 from PIL import Image, ImageTk
 import io
-import shelve
 import tkinter.constants as constants
 import re
 from Slike import Slike
-
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tkinter import messagebox
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
@@ -24,8 +24,9 @@ class Root(Tk):
             frame = frejm(container, controller=self)
             self.prozori[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
-
+        self.resizable(False, False)
         self.prebaci_frejm("GettyFrame")
+        self.geometry("746x256")
 
     def prebaci_frejm(self, page_name,urll='',br=1):
         prozor = self.prozori[page_name]
@@ -52,15 +53,15 @@ class GettyFrame(Frame):
         imageresolution
         locations
         """
-        Label(self,text='Search').grid(row=0,column=0,sticky=W)
+        Label(self,text='Search',font=("Courier", 14)).grid(row=0,column=0,sticky=W)
 
         self.searchEntry = Entry(self,width=30)
-        self.searchEntry.insert(END,'manchester united')
+        self.searchEntry.insert(END,'')
         self.searchEntry.grid(row=0,column=1,sticky=W)
 
         self.sortByVar = StringVar()
         self.sortByVar.set(None)
-        Label(self, text='Sort by',bg='red').grid(row=1, column=0, sticky=W)
+        Label(self, text='Sort by',bg='red',font=("Courier", 14)).grid(row=1, column=0, sticky=W)
 
         Radiobutton(self,text='best match',value='best',variable=self.sortByVar,command=self.getSort).grid(
             row=1,column = 1,sticky=W
@@ -77,7 +78,7 @@ class GettyFrame(Frame):
 
 
 
-        Label(self, text='Date range').grid(row=2, column=0, sticky=W)
+        Label(self, text='Date range',font=("Courier", 14)).grid(row=2, column=0, sticky=W)
 
         self.rangeVar = StringVar()
         self.rangeVar.set(None)
@@ -104,7 +105,7 @@ class GettyFrame(Frame):
             row=3, column=3, sticky=W
         )
 
-        Label(self, text='Orientation').grid(row=4, column=0, sticky=W)
+        Label(self, text='Orientation',font=("Courier", 14)).grid(row=4, column=0, sticky=W)
 
         self.orVertical = BooleanVar()
         self.orHorizontal = BooleanVar()
@@ -128,7 +129,7 @@ class GettyFrame(Frame):
 
         self.imgRes = StringVar()
         self.imgRes.set(None)
-        Label(self, text='Image resolution').grid(row=6, column=0, sticky=W)
+        Label(self, text='Image resolution',font=("Courier", 14)).grid(row=6, column=0, sticky=W)
 
         Radiobutton(self, text='All', value=' ', variable=self.imgRes,
                     command=self.getResolution).grid(
@@ -146,7 +147,7 @@ class GettyFrame(Frame):
                     command=self.getResolution).grid(
             row=7, column=3, sticky=W
         )
-        Button(self,text='SEARCH',command=self.searchPictures).grid(row=8,column=0,sticky=W)
+        Button(self,text='SEARCH',font=("", 10),command=self.searchPictures).grid(row=8,column=0,sticky=W)
         for i in GettyFrame.winfo_children(self):
             if(str(i) =='.!frame.!gettyframe.!entry'):
                 i.config(bg="#c8e9fa")
@@ -189,7 +190,8 @@ class GettyFrame(Frame):
 
                 pyperclip.copy(url)
                 self.controller.prebaci_frejm('PicturesFrame',pyperclip.paste(),1)
-
+                self.controller.geometry("1300x460")
+                time.sleep(0.5)
 
 class PicturesFrame(Frame):
     allPictures = []
@@ -197,6 +199,7 @@ class PicturesFrame(Frame):
     tr_br = 0
     url0 = ""
     za_download0 = []
+    sablon = re.compile(r'(https:.*?)(&page=)?(\d{1,4})?(&sort=.*)')
     # &page=tr_br&sort=
     def __init__(self, parent, controller):
         Frame.__init__(self, parent)
@@ -211,42 +214,13 @@ class PicturesFrame(Frame):
             # manchester united
             self.footer_setup()
         self.dodajslike(url,br)
-    def idi_nazad(self):
-
-        sablon = re.compile(r'(https:.*?)(&page=)?(\d{1,4})?(&sort=.*)')
-        podaci = sablon.findall(PicturesFrame.url0)
-        br = 0
-        if (PicturesFrame.tr_br==1):
-            urlnext = podaci[0][0] + '&page=' + str(PicturesFrame.tr_br - 1) + podaci[0][3]
-            self.remove_gallery()
-        else:
-            br = int(podaci[0][2]) - 1
-            urlnext = podaci[0][0] + podaci[0][1] + str(br) + podaci[0][3]
-
-        for i in self.frame.winfo_children():
-            i.destroy()
-        self.dodajslike(urlnext,br)
-    def idi_napred(self):
-        sablon = re.compile(r'(https:.*?)(&page=)?(\d{1,4})?(&sort=.*)')
-        podaci = sablon.findall(PicturesFrame.url0)
-        br = 0
-        urlnext = ""
-        if (PicturesFrame.tr_br == 1):
-            urlnext = podaci[0][0] + '&page='+str(PicturesFrame.tr_br+1)+ podaci[0][3]
-        else:
-            br = int(podaci[0][2])+1
-            urlnext = podaci[0][0] + podaci[0][1] + str(br)+ podaci[0][3]
-        for i in self.frame.winfo_children():
-            i.destroy()
-        self.dodajslike(urlnext,br)
-
     def scrollbar_setup(self):
         # za embed scrollbar-a moramo koristiti canvas u kome se nalazi frame
         self.canvas = Canvas(self, borderwidth=0, background="#ffffff")
         self.frame = Frame(self.canvas, background="#81cbf0")
         self.vsb = Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vsb.set)
-        # recnik = {'link0': {1: ['a', 'b']}}
+        # recnik = {'link0': ['slika1', 'slika2']}}
 
         self.vsb.pack(side="right", fill="y")
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -254,60 +228,20 @@ class PicturesFrame(Frame):
                                   tags="self.frame")
 
         self.frame.bind("<Configure>", self.onFrameConfigure)
-    def remove_gallery(self):
-        for i in self.frame.winfo_children():
-            i.destroy()
-        self.controller.prebaci_frejm('GettyFrame')
-        self.controller.geometry("628x256")
-    def download_zip(self,):
-        GettyDownloader.download_zip(self,PicturesFrame.za_download0)
-        PicturesFrame.za_download0 = []
-        for i in self.frame.winfo_children():
-            i.selectedd = False
-            i['borderwidth'] = 2
-            i['relief'] = 'groove'
-    # https://www.gettyimages.com/photos/manchester united?family=editorial&recency=last30days&orientations=vertical,&imagesize=xxlarge&sort=mostpopular
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
     def footer_setup(self):
         self.btn_search = Button(self.controller, text='<-', font='Courier 15 bold',command=self.remove_gallery)
         self.btn_previous = Button(self.controller, text='<', font='Courier 15 bold',command=self.idi_nazad)
         self.btn_next = Button(self.controller, text='>', font='Courier 15 bold',command=self.idi_napred)
-        self.btn_download = Button(self.controller, text='DOWNLOAD:', font='Courier 15 bold',
+        self.btn_download = Button(self.controller, text='DOWNLOAD(0)', font='Courier 15 bold',
                                    command=self.download_zip)
 
         self.btn_search.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_previous.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_next.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_download.pack(side=constants.LEFT, fill="both", expand=True)
-    def za_download(self,label1):
-        # PicturesFrame.za_download0
-        if (label1.selectedd == False):
-            label1.selectedd = True
-            PicturesFrame.za_download0.append(label1.lokacija)
-            label1['borderwidth'] = 4
-            label1['relief'] = 'solid'
-        elif (label1.selectedd == True):
-            label1.selectedd = False
-            PicturesFrame.za_download0.remove(label1.lokacija)
-            label1['borderwidth'] = 2
-            label1['relief'] = 'groove'
 
-
-    def dodajslike2(self,podaci):
-        row = 1
-        column = 0
-        for i in range(len(podaci)):
-            if (column == 4):
-                column = 0
-                row += 1
-            PicturesFrame.allPictures.append(self.createTkImage(podaci[i]))
-            self.lbl1 = Label(self.frame, image=PicturesFrame.allPictures[-1], borderwidth=2,
-                              relief="groove")
-            self.lbl1['image'] = PicturesFrame.allPictures[-1]
-            self.lbl1.lokacija = podaci[i]
-            self.lbl1.selectedd = False
-            self.lbl1.bind("<Button-1>", lambda e, var=self.lbl1: self.za_download(var))
-            self.lbl1.grid(row=row, column=column, sticky=W)
-            column += 1
     def dodajslike(self,url,br):
 
         # Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
@@ -327,25 +261,105 @@ class PicturesFrame(Frame):
                         self.controller.geometry("1300x460")
                         self.dodajslike2(self.urls)
                     elif (len(self.urls) == 0):
-                        PicturesFrame.tr_br = br
-                        PicturesFrame.url0 = url
-                        Label(self.frame, text='Trenutna stranica nije dostupna.', bg='#ff4747').grid(row=1, column=0,sticky=W)
-                        self.controller.geometry("628x369")
+                        print('ovo')
+                        messagebox.showinfo('Greska','Trazena stranica ne postoji.')
 
                 else:
-                    PicturesFrame.tr_br = br
-                    PicturesFrame.url0 = url
-                    Label(self.frame, text='Trenutna stranica nije dostupna.',bg='#ff4747').grid(row=1, column=0, sticky=W)
-                    self.controller.geometry("628x369")
+                    messagebox.showinfo('Greska', 'Trazena stranica ne postoji.')
             else:
                 PicturesFrame.tr_br = br
                 PicturesFrame.url0 = url
+                for i in self.frame.winfo_children():
+                    i.destroy()
                 self.controller.geometry("1300x460")
                 self.dodajslike2(podaci)
+
+    def dodajslike2(self,podaci):
+        row = 1
+        column = 0
+        PicturesFrame.allPictures = []
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            for i in range(len(podaci)):
+                if (column == 4):
+                    column = 0
+                    row += 1
+                PicturesFrame.allPictures.append(self.createTkImage(podaci[i]))
+                self.lbl1 = Label(self.frame, image=PicturesFrame.allPictures[-1], borderwidth=2,
+                                  relief="groove")
+                self.lbl1['image'] = PicturesFrame.allPictures[-1]
+                self.lbl1.lokacija = podaci[i]
+                self.lbl1.selectedd = False
+                self.lbl1.bind("<Button-1>", lambda e, var=self.lbl1: self.za_download(var))
+                self.lbl1.grid(row=row, column=column, sticky=W)
+                column += 1
+
+    def idi_napred(self):
+        podaci = PicturesFrame.sablon.findall(PicturesFrame.url0)
+        br = 0
+        urlnext = ""
+        if (PicturesFrame.tr_br == 1):
+            urlnext = podaci[0][0] + '&page='+str(PicturesFrame.tr_br+1)+ podaci[0][3]
+        else:
+            br = int(podaci[0][2])+1
+            urlnext = podaci[0][0] + podaci[0][1] + str(br)+ podaci[0][3]
+        for i in self.frame.winfo_children():
+            i.destroy()
+        self.dodajslike(urlnext,br)
+
+    def idi_nazad(self):
+        podaci = PicturesFrame.sablon.findall(PicturesFrame.url0)
+        br = 0
+        if (PicturesFrame.tr_br==1):
+            urlnext = podaci[0][0] + '&page=' + str(PicturesFrame.tr_br - 1) + podaci[0][3]
+            self.remove_gallery()
+        else:
+            br = int(podaci[0][2]) - 1
+            urlnext = podaci[0][0] + podaci[0][1] + str(br) + podaci[0][3]
+            self.dodajslike(urlnext, br)
+            for i in self.frame.winfo_children():
+                i.destroy()
+            self.dodajslike(urlnext, br)
+
+    def remove_gallery(self):
+        for i in self.frame.winfo_children():
+            i.destroy()
+        self.controller.prebaci_frejm('GettyFrame')
+        self.controller.geometry("746x256")
+
+    def download_zip(self,):
+        if(len(PicturesFrame.za_download0)>0):
+            GettyDownloader.download_zip(self,PicturesFrame.za_download0)
+
+            for i in self.frame.winfo_children():
+                i.selectedd = False
+                i['borderwidth'] = 2
+                i['relief'] = 'groove'
+            PicturesFrame.za_download0 = []
+            self.btn_download['text'] = 'DOWNLOAD(0)'
+            messagebox.showinfo('Poruka', 'Slike su uspesno preuzete.')
+    # https://www.gettyimages.com/photos/manchester united?family=editorial&recency=last30days&orientations=vertical,&imagesize=xxlarge&sort=mostpopular
+
+    def za_download(self,label1):
+        # PicturesFrame.za_download0
+        if (label1.selectedd == False):
+            label1.selectedd = True
+            PicturesFrame.za_download0.append(label1.lokacija)
+            label1['borderwidth'] = 4
+            label1['relief'] = 'solid'
+        elif (label1.selectedd == True):
+            label1.selectedd = False
+            PicturesFrame.za_download0.remove(label1.lokacija)
+            label1['borderwidth'] = 2
+            label1['relief'] = 'groove'
+        self.btn_download['text'] = 'DOWNLOAD('+str(len(PicturesFrame.za_download0))+')'
+
+    def _on_mousewheel(self,event):
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def onFrameConfigure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     def createTkImage(self,url):
+        #najbitnija metoda
         image_url = urlopen(url)
         my_picture = io.BytesIO(image_url.read())
         im = Image.open(my_picture)

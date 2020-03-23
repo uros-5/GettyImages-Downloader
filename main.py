@@ -7,5 +7,3 @@ root.config(bg="#81cbf0")
 root.grid()
 root.mainloop()
 
-
-
