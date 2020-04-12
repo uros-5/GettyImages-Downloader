@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tkinter import messagebox
 import threading
 from tkinter.ttk import Progressbar
+import os
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
@@ -323,13 +324,22 @@ class PicturesFrame(Frame):
         self.btn_next = Button(self.controller, text='>', font='Courier 15 bold',command=self.idi_napred)
         self.btn_download = Button(self.controller, text='DOWNLOAD(0)', font='Courier 15 bold',
                                    command=self.download_zip)
+        self.btn_deselect_all = Button(self.controller, text='DESELECT ALL', font='Courier 15 bold',command=self.deselect_all)
+
 
         self.btn_search.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_previous.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_next.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_download.pack(side=constants.LEFT, fill="both", expand=True)
+        self.btn_deselect_all.pack(side=constants.LEFT, fill="both", expand=True)
 
-
+    def deselect_all(self):
+        for i in self.frame.winfo_children():
+            i.selectedd = False
+            i['borderwidth'] = 2
+            i['relief'] = 'groove'
+        PicturesFrame.za_download0 = []
+        self.btn_download['text'] = 'DOWNLOAD(' + str(len(PicturesFrame.za_download0)) + ')'
     def dodajslike(self,url,br):
         
 
@@ -374,6 +384,7 @@ class PicturesFrame(Frame):
                 self.controller.downloadProgress = 40
 
                 self.dodajslike2(podaci)
+                self.update()
 
     def dodajslike2(self,podaci):
         row = 1
@@ -452,7 +463,7 @@ class PicturesFrame(Frame):
 
     def download_zip(self,):
         if(len(PicturesFrame.za_download0)>0):
-            GettyDownloader.download_zip(self,PicturesFrame.za_download0)
+            dir0 = GettyDownloader.download_zip(self,PicturesFrame.za_download0)
 
             for i in self.frame.winfo_children():
                 i.selectedd = False
@@ -461,6 +472,7 @@ class PicturesFrame(Frame):
             PicturesFrame.za_download0 = []
             self.btn_download['text'] = 'DOWNLOAD(0)'
             messagebox.showinfo('Poruka', 'Slike su uspesno preuzete.')
+            os.startfile(dir0)
     # https://www.gettyimages.com/photos/manchester united?family=editorial&recency=last30days&orientations=vertical,&imagesize=xxlarge&sort=mostpopular
 
     def za_download(self,label1):

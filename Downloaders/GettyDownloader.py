@@ -36,18 +36,14 @@ class GettyDownloader():
         zipFajl = ''
         imefajla=''
         brojac = 0
+        imefoldera = ""
         while(True):
-            imefajla = 'download_GettyImages'+str(brojac)+'.zip'
-            if(imefajla not in os.listdir('Slike/')):
-                zipFajl = zipfile.ZipFile('Slike/'+imefajla,'w')
+            imefoldera = 'download_GettyImages'+str(brojac)
+            if(imefoldera not in os.listdir('Slike/')):
+                os.mkdir('Slike/'+imefoldera)
                 break
             brojac+=1
         for i in range(len(podaci)):
             url = podaci[i]
-            podatak = urllib.request.urlretrieve(url, "Slike/Slika_"+str(i)+".jpg")
-            zipFajl.write("Slike/Slika_"+str(i)+".jpg", compress_type=zipfile.ZIP_DEFLATED)
-        zipFajl.close()
-        zipFajl = zipfile.ZipFile('Slike/'+imefajla)
-        for i in zipFajl.namelist():
-            os.unlink(i)
-        zipFajl.close()
+            podatak = urllib.request.urlretrieve(url, "Slike/"+imefoldera+"/Slika_"+str(i)+".jpg")
+        return "Slike\\"+imefoldera
