@@ -10,6 +10,8 @@ from Slike import Slike
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tkinter import messagebox
+import threading
+from tkinter.ttk import Progressbar
 class Root(Tk):
     def __init__(self, *args, **kwargs):
         Tk.__init__(self, *args, **kwargs)
@@ -19,20 +21,100 @@ class Root(Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
         self.prozori = {}
-        for frejm in (GettyFrame,PicturesFrame):
+        for frejm in (GettyFrame,PicturesFrame,BlankFrame):
             page_name = frejm.__name__
             frame = frejm(container, controller=self)
             self.prozori[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
         self.resizable(False, False)
+        self.pretraga = False
+        self.downloadProgress = 0
         self.prebaci_frejm("GettyFrame")
         self.geometry("746x256")
 
     def prebaci_frejm(self, page_name,urll='',br=1):
         prozor = self.prozori[page_name]
-        prozor.tkraise()
+        # self.update()
         if urll != '':
-            prozor.create_widgets(urll,br)
+
+            self.t1_set()
+            self.t1_start()
+
+            self.t2_set(urll,br)
+            self.t2_start()
+            # t2.setDaemon(True)
+            # glavni threadovi
+            # prozor.create_widgets(urll,br)
+        else:
+            prozor.tkraise()
+
+    def t1_set(self):
+        self.geometry("746x256")
+        self.update()
+        prozor2 = self.prozori["BlankFrame"]
+        prozor2.tkraise()
+        prozor2.update()
+        self.update()
+        self.t1 = threading.Thread(target=prozor2.run_progressbar)
+        
+    def t1_get(self):
+        return self.t1.is_alive()
+    def t1_start(self):
+        self.t1.start()
+
+    def t2_set(self,urll,br,dodajslike = False):
+        prozor = self.prozori["PicturesFrame"]
+        prozor.update()
+        if(dodajslike==False):
+            self.t2 = threading.Thread(target=lambda var=urll, var2=br: prozor.create_widgets(var, var2))
+        else:
+            self.t2 = threading.Thread(target=lambda var=urll, var2=br: prozor.dodajslike(var, var2))
+    def t2_get(self):
+        return self.t2.is_alive()
+    def t2_start(self):
+        self.t2.start()
+
+
+class BlankFrame(Frame):
+    def __init__(self,parent,controller):
+        Frame.__init__(self,parent)
+        self.controller = controller
+        self.grid()
+        self.lbl0 = Label(self, text="Pretraga..",font=("Courier", 44))
+        self.lbl0.pack()
+        self.progress_bar = Progressbar(self,orient="horizontal",length=286,mode="determinate")
+        self.progress_bar.pack()
+    def create_widgets(self):
+        self.lbl0.pack()
+
+    def run_progressbar(self):
+        self.progress_bar["maximum"] = 100
+
+        br = 0
+        while (br < 101):
+            self.update()
+            br2 = self.controller.downloadProgress
+            self.progress_bar.update()
+            if (br != br2):
+                # print(br2)
+                br = br2
+                time.sleep(0.05)
+                self.progress_bar["value"] = br2
+                self.progress_bar.update()
+                self.update()
+                if (br == 100):
+                    self.stop_progressbar()
+                    self.progress_bar["value"] = 0
+                    self.controller.update()
+                    self.controller.prebaci_frejm("PicturesFrame")
+                    self.controller.update()
+                    self.controller.downloadProgress = 0
+                    break
+
+    def stop_progressbar(self):
+        self.progress_bar.stop()
+
+
 
 class GettyFrame(Frame):
 
@@ -189,9 +271,11 @@ class GettyFrame(Frame):
                     url+= '&sort=mostpopular'
 
                 pyperclip.copy(url)
+                self.controller.pretraga = True
                 self.controller.prebaci_frejm('PicturesFrame',pyperclip.paste(),1)
-                self.controller.geometry("1300x460")
+                # self.controller.geometry("1300x460")
                 time.sleep(0.5)
+                
 
 class PicturesFrame(Frame):
     allPictures = []
@@ -205,7 +289,7 @@ class PicturesFrame(Frame):
         Frame.__init__(self, parent)
         self.controller = controller
         self.slike = Slike.Slike()
-
+    
 
     def create_widgets(self,url="",br=1):
         if(PicturesFrame.counter == 0):
@@ -213,6 +297,8 @@ class PicturesFrame(Frame):
             PicturesFrame.counter+=1
             # manchester united
             self.footer_setup()
+        self.controller.downloadProgress = 20
+
         self.dodajslike(url,br)
     def scrollbar_setup(self):
         # za embed scrollbar-a moramo koristiti canvas u kome se nalazi frame
@@ -230,6 +316,7 @@ class PicturesFrame(Frame):
         self.frame.bind("<Configure>", self.onFrameConfigure)
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
+
     def footer_setup(self):
         self.btn_search = Button(self.controller, text='<-', font='Courier 15 bold',command=self.remove_gallery)
         self.btn_previous = Button(self.controller, text='<', font='Courier 15 bold',command=self.idi_nazad)
@@ -242,13 +329,16 @@ class PicturesFrame(Frame):
         self.btn_next.pack(side=constants.LEFT, fill="both", expand=True)
         self.btn_download.pack(side=constants.LEFT, fill="both", expand=True)
 
+
     def dodajslike(self,url,br):
+        
 
         # Label(self,text='Ovde ce biti slike.').grid(row=0,column=0,sticky=W)
         if (url != ''):
             podaci = self.slike.provera(url)
-            if (podaci == 'URL NOT FOUND'):
 
+            if (podaci == 'URL NOT FOUND'):
+                self.controller.downloadProgress = 35
                 # self.slike.unos()
                 self.urls = GettyDownloader.getListOfPhotos(self,url)
                 # self.imgs = []
@@ -258,20 +348,31 @@ class PicturesFrame(Frame):
                         PicturesFrame.url0 = url
                         # dobijena je lista
                         self.slike.unos(url,self.urls)
-                        self.controller.geometry("1300x460")
+
+                        self.controller.downloadProgress = 40
                         self.dodajslike2(self.urls)
+
                     elif (len(self.urls) == 0):
-                        print('ovo')
+                        self.controller.downloadProgress = 100
                         messagebox.showinfo('Greska','Trazena stranica ne postoji.')
+                        self.controller.prebaci_frejm("GettyFrame")
+                        self.controller.geometry("746x256")
+                        self.update()
+
 
                 else:
+                    self.controller.downloadProgress = 100
                     messagebox.showinfo('Greska', 'Trazena stranica ne postoji.')
+                    self.controller.prebaci_frejm("GettyFrame")
+                    self.controller.geometry("746x256")
+                    self.update()
             else:
                 PicturesFrame.tr_br = br
                 PicturesFrame.url0 = url
                 for i in self.frame.winfo_children():
                     i.destroy()
-                self.controller.geometry("1300x460")
+                self.controller.downloadProgress = 40
+
                 self.dodajslike2(podaci)
 
     def dodajslike2(self,podaci):
@@ -279,6 +380,8 @@ class PicturesFrame(Frame):
         column = 0
         PicturesFrame.allPictures = []
         with ThreadPoolExecutor(max_workers=5) as executor:
+            self.controller.downloadProgress = 60
+
             for i in range(len(podaci)):
                 if (column == 4):
                     column = 0
@@ -292,8 +395,13 @@ class PicturesFrame(Frame):
                 self.lbl1.bind("<Button-1>", lambda e, var=self.lbl1: self.za_download(var))
                 self.lbl1.grid(row=row, column=column, sticky=W)
                 column += 1
+                self.controller.downloadProgress = self.controller.downloadProgress + 0.5
+            self.controller.geometry("1300x460")
+            self.controller.downloadProgress = 100
+
 
     def idi_napred(self):
+        
         podaci = PicturesFrame.sablon.findall(PicturesFrame.url0)
         br = 0
         urlnext = ""
@@ -304,7 +412,20 @@ class PicturesFrame(Frame):
             urlnext = podaci[0][0] + podaci[0][1] + str(br)+ podaci[0][3]
         for i in self.frame.winfo_children():
             i.destroy()
-        self.dodajslike(urlnext,br)
+        
+
+        self.controller.prebaci_frejm("PicturesFrame",urlnext,br)
+        self.controller.geometry("746x256")
+        self.controller.update()
+        #
+        # self.controller.t1_set()
+        # self.controller.t1_start()
+        # self.update()
+
+        # self.controller.t2_set(urlnext,br,False)
+        # self.controller.t2_start()
+
+        # self.dodajslike(urlnext,br)
 
     def idi_nazad(self):
         podaci = PicturesFrame.sablon.findall(PicturesFrame.url0)
@@ -315,10 +436,13 @@ class PicturesFrame(Frame):
         else:
             br = int(podaci[0][2]) - 1
             urlnext = podaci[0][0] + podaci[0][1] + str(br) + podaci[0][3]
-            self.dodajslike(urlnext, br)
+            # self.dodajslike(urlnext, br)
             for i in self.frame.winfo_children():
                 i.destroy()
-            self.dodajslike(urlnext, br)
+            self.controller.prebaci_frejm("PicturesFrame", urlnext, br)
+            self.controller.geometry("746x256")
+            self.controller.update()
+            # self.dodajslike(urlnext, br)
 
     def remove_gallery(self):
         for i in self.frame.winfo_children():
