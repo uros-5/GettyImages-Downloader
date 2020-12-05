@@ -1,0 +1,15 @@
+{
+  "FrameContainer": {
+    "master": "root",
+    "layout": "pack",
+    "pack": {
+      "side": "top",
+      "fill": "both",
+      "expand": true
+    },
+    "methods": [
+
+    ],
+    "config": {}
+  }
+}

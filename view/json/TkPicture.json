@@ -1,0 +1,10 @@
+{
+    "LabelTkPicture": {
+        "layout":"grid",
+        "master":"Frame2",
+        "config":{"text":"","borderwidth":2,"relief":"groove"},
+        "methods":[],
+        "newRow":false,
+        "grid":{"sticky":"W"}
+    }
+}

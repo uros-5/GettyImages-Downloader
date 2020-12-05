@@ -1,0 +1,42 @@
+{
+    "FramePictures": {
+            "layout": "grid",
+            "methods": [],
+            "master": "root",
+            "config": {},
+            "grid": {"row": 0,"column": 0,"sticky": "NSEW"},
+            "newRow": false
+    },
+    "ButtonBackSearch":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":"<-"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    },
+    "ButtonPrevious":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":"<"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    },
+    "ButtonNext":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":">"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    },
+    "ButtonDownload":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":"DOWNLOAD(0)"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    }
+}

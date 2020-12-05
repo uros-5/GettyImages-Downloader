@@ -8,3 +8,4 @@ pyperclip==1.7.0
 requests==2.23.0
 soupsieve==2.0
 urllib3==1.25.8
+easy-tk==1.0.6.2

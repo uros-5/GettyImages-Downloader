@@ -1,0 +1,35 @@
+{
+  "Frame0": {
+    "master": "FrameContainer",
+    "layout": "grid",
+    "grid": {"row": 0,"column": 0,"sticky": "NSEW"},
+    "config": {},
+    "methods": [],
+    "newRow": false
+  },
+  "Canvas": {
+    "master": "Frame0",
+    "layout": "pack",
+    "pack": {"side":"left", "fill":"both", "expand":true},
+    "config": {"borderwidth": 1},
+    "methods": ["set_scrollbar"],
+    "newRow": false
+  },
+  "Scrollbar": {
+    "master": "Frame0",
+    "layout": "pack",
+    "pack": {"side":"right", "fill":"y"},
+    "config": {"orient": "vertical"},
+    "methods": [],
+    "newRow": false
+  },
+  "Frame2": {
+    "master": "Canvas",
+    "layout": "grid",
+    "grid": {"row": 0,"column": 0,"sticky": "NSEW"},
+    "config": {},
+    "methods": [],
+    "newRow":false
+  }
+
+}

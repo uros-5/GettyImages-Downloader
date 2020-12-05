@@ -1,0 +1,35 @@
+{
+    "ButtonBackSearch":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":"<-","command":"var:go_to_frame_search"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    },
+    "ButtonPrevious":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":"<","command":"var:previous_page"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    },
+    "ButtonNext":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":">","command":"var:next_page"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    },
+    "ButtonDownload":{
+        "layout":"pack",
+        "methods":[],
+        "master":"root",
+        "config":{"text":"DOWNLOAD(0)","command":"var:download"},
+        "pack":{"side":"var:left","fill":"both","expand":true},
+        "newRow":false
+    }
+
+}
