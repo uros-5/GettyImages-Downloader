@@ -33,13 +33,17 @@ class SearchDetails(object):
         print(self.url)
     
     def getOrientation(self):
-        orientation = ""
+        orientation = "&orientation="
         if self.is_vertical:
             orientation += 'vertical'+','
         if self.is_horizontal:
             orientation+= 'horizontal'+','
         if self.is_square:
             orientation+= 'square'+','
+        if orientation == "&orientation=":
+            return ""
+        if orientation.endswith(","):
+            orientation = orientation[0:-1]
         return orientation
 
     def is_entry_space(self):

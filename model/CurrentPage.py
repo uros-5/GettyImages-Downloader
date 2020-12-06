@@ -39,3 +39,9 @@ class CurrentPage(object):
     def remove_url(self,url):
         index = self.urls.index(url)
         del self.urls[index]
+
+    def to_stop_loading(self):
+        if len(self.urls) == 0:
+            return True
+        return False
+        

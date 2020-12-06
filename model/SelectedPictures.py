@@ -27,7 +27,6 @@ class SelectedPictures(object):
 
     def save_all_photos(self,folder):
         for i in range(len(self.pictures)):
-            print(i)
             urllib.request.urlretrieve(self.pictures[i],f'{folder}/{i}.jpg')
 
     def create_folder(self):

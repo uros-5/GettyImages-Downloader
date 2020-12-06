@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import os
 import zipfile
 import urllib.request
+from model.GettyImage import GettyImage
 
 class Downloader(object):
     
@@ -22,7 +23,6 @@ class Downloader(object):
             req = requests.get(self.search_details.url)
             self.stranica = BeautifulSoup(req.text,"html.parser")
             self.slike = self.stranica.findAll("figure", {"class": "gallery-mosaic-asset__figure"})
-            self.getty_pictures.counter = len(list(self.slike))
 
             if len(list(self.slike)) == 0:
                 is_avaliable = self.not_available_url()
@@ -36,9 +36,9 @@ class Downloader(object):
                 for i in range(len(self.slike)):
                     with ThreadPoolExecutor(max_workers=5) as executor:
                         if self.slike[i].find('img').has_attr('src'):
-                            src = self.get_src(self.slike[i])
-                            self.getty_pictures.save_photo(src)
-                            self.current_page.urls.append(src)
+                            getty_image = GettyImage(self.slike[i])
+                            self.getty_pictures.append(getty_image)
+                            self.current_page.urls.append(getty_image.url)
             break
     
     def get_src(self,item):

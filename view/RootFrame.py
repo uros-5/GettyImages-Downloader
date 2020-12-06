@@ -49,7 +49,6 @@ class Root(EasyTkObject):
         self.resize_screen()
         self.root.update()
         
-
     def download_for_page(self):
         self.downloader.start_download_all()
         self.image_adder.start_save_all()

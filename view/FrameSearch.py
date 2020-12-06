@@ -17,16 +17,6 @@ class FrameSearch(EasyTkObject):
             "or_square":self.or_square,"img_res":self.img_res,"search_btn":self.search_btn})
         self.import_modules([Checkbutton,])
 
-    def create_widgets(self):
-        self.open_file("view/json/FrameSearch.json")
-        self.reading_from_json()
-        self.get("EntrySearch").insert(END,'manchester united')
-    
-    def tkraise(self):
-        """ print(self.get("FrameSearch")) """
-        self.controller.geometry = "1280x250"
-        self.get("FrameSearch").tkraise()
-
     def init_variables_and_methods(self):
         self.sort_by_var = StringVar()
         self.sort_by_var.set(None)
@@ -41,6 +31,16 @@ class FrameSearch(EasyTkObject):
 
         self.img_res = StringVar()
         self.img_res.set(None)
+
+    def create_widgets(self):
+        self.open_file("view/json/FrameSearch.json")
+        self.reading_from_json()
+        self.get("EntrySearch").insert(END,'manchester united')
+    
+    def tkraise(self):
+        """ print(self.get("FrameSearch")) """
+        self.controller.geometry = "1280x250"
+        self.get("FrameSearch").tkraise()  
     
     def set_models(self,models):
         self.search_details = models["SearchDetails"]
@@ -51,10 +51,11 @@ class FrameSearch(EasyTkObject):
     def search_btn(self):
         self.search_details.entry = self.get("EntrySearch").get()
         self.search_details.sort = self.sort_by_var.get()
-        self.search_details.sort_by_range = self.sort_by_range.get()
+        self.search_details.datum_range = self.sort_by_range.get()
         self.search_details.is_vertical = self.or_vertical.get()
         self.search_details.is_horizontal = self.or_horizontal.get()
         self.search_details.is_square = self.or_square.get()
+        self.search_details.resolution = self.img_res.get()
         self.search_details.search()
         self.controller.switch_window("FramePictures")
 
@@ -62,4 +63,3 @@ class FrameSearch(EasyTkObject):
         self.getty_pictures.reset_all()
         self.current_page.original_page_url = ""
         self.current_page.reset_page_number()
-        

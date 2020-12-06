@@ -2,7 +2,7 @@ import threading
 import time
 class ImageAdder(object):
     def __init__(self,models,easy):
-        self.getty_pictures = models["GettyPictures"]
+        self.getty_images = models["GettyPictures"]
         self.current_page = models["CurrentPage"]
         self.easy = easy
 
@@ -15,24 +15,20 @@ class ImageAdder(object):
         self.thread_download.start()
 
     def __all(self):
-        urls = {}
-        while self.getty_pictures.to_dl() and self.getty_pictures.not_saved():
-            urls = self.getty_pictures.photo_urls
+        images = {}
+        while self.getty_images.to_dl():
+            images = self.getty_images
             try:
-                for url in urls:
-                    if urls[url] == 0:
-                        self.getty_pictures.save_photo(url)
-                        self.easy.add_picture(url)
-                        self.current_page.remove_url(url)
-                    if not self.getty_pictures.to_dl():
-                        break
+                for tk_image in images:
+                    if tk_image.image == 0:
+                        tk_image.save_photo()
+                        self.easy.add_picture(tk_image)
+                        self.current_page.remove_url(tk_image.url)
                     else:
-                        if url in self.current_page.urls:
-                            self.easy.add_picture(url)
-                            self.current_page.remove_url(url)
-
+                        if tk_image.url in self.current_page.urls:
+                            self.easy.add_picture(tk_image)
+                            self.current_page.remove_url(tk_image.url)
             except Exception as e:
                 continue
-
-        self.getty_pictures.reset_all()
+        self.getty_images.to_download = True
         self.current_page.urls = []

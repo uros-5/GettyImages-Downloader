@@ -52,12 +52,13 @@ class FramePictures(EasyTkObject):
         self.row = 0
         self.column = -1
 
-    def add_picture(self,url):
+    def add_picture(self,tk_image):
         self.open_file("view/json/TkPicture.json")
         self.reading_from_json()
-        self.set_rc(url)
+        self.set_rc(tk_image)
         self.key_counter += 1
         self.get("root").update()
+        self.getty_pictures.to_download = self.current_page.to_stop_loading()
 
     def get_last_picture(self):
         key = "LabelTkPicture"
@@ -67,7 +68,7 @@ class FramePictures(EasyTkObject):
             self.all_easy_photo_keys.append(f'{key}_{self.key_counter}')
             return self.get(f'{key}_{self.key_counter}')
     
-    def set_rc(self,url):
+    def set_rc(self,tk_image):
         picture = self.get_last_picture()
         if self.column < 3:
             self.column += 1
@@ -75,15 +76,15 @@ class FramePictures(EasyTkObject):
             self.row+=1
             self.column = 0
         """ picture["text"] = f'{self.row} and column:{self.column}' """
-        picture['image'] = self.getty_pictures.get_tk_image(url)
-        picture.bind("<Button-1>",lambda e,url=url,widget=picture: self.select_photo(url,widget))
+        picture['image'] = tk_image.image
+        picture.bind("<Button-1>",lambda e,tk_image=tk_image,widget=picture: self.select_photo(tk_image,widget))
         picture.grid(row=self.row,column=self.column)
     
     def go_to_frame_search(self):
-        print("frame search")
         self.getty_pictures.reset_all()
         self.controller.switch_window("FrameSearch")
         self.remove_all_photos()
+        self.init_rc_for_image()
        
 
     def switch_page(self,page):
@@ -109,13 +110,13 @@ class FramePictures(EasyTkObject):
                 widgets[i].get().destroy()
         self.all_easy_photo_keys = []
     
-    def select_photo(self,url,widget):
+    def select_photo(self,tk_image,widget):
         # ovo je deselect
-        if url in self.selected_pictures.pictures:
-            self.selected_pictures.add_picture(url,widget)
+        if tk_image.url in self.selected_pictures.pictures:
+            self.selected_pictures.add_picture(tk_image.url,widget)
         # ovo je select
         else:
-            self.selected_pictures.add_picture(url,widget)
+            self.selected_pictures.add_picture(tk_image.url,widget)
         self.update_dl_btn()
 
     def update_dl_btn(self):

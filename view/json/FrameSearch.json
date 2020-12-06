@@ -180,7 +180,7 @@
         "layout":"grid",
         "methods":[],
         "master":"FrameSearch",
-        "config":{"text":"All","variable":"var:img_res","value":"","font": ["Courier",14]},
+        "config":{"text":"All","variable":"var:img_res","value":"None","font": ["Courier",14]},
         "grid":{"sticky":"W"},
         "newRow":false
     },
