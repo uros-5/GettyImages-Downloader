@@ -35,7 +35,6 @@ class FrameSearch(EasyTkObject):
     def create_widgets(self):
         self.open_file("view/json/FrameSearch.json")
         self.reading_from_json()
-        self.get("EntrySearch").insert(END,'manchester united')
     
     def tkraise(self):
         """ print(self.get("FrameSearch")) """
